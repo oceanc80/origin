@@ -4,9 +4,17 @@ This automation simplifies the process of updating the TLS registry from nightly
 
 ## Quick Start
 
+### Standard Mode (Known Artifacts)
 ```bash
 make refresh-tls-registry NIGHTLY_URL=https://amd64.ocp.releases.ci.openshift.org/releasestream/4.21.0-0.nightly/release/4.21.0-0.nightly-2025-10-03-111550
 ```
+
+### Discovery Mode (Detect New Artifacts) ⭐ Recommended
+```bash
+DISCOVER_MODE=true make refresh-tls-registry NIGHTLY_URL=https://amd64.ocp.releases.ci.openshift.org/releasestream/4.21.0-0.nightly/release/4.21.0-0.nightly-2025-10-03-111550
+```
+
+**💡 Tip**: Use discovery mode when you suspect new certificates have been added or when investigating what's in a nightly build.
 
 ## Prerequisites
 
@@ -94,6 +102,40 @@ make refresh-tls-registry NIGHTLY_URL=https://amd64.ocp.releases.ci.openshift.or
 
 ## Options
 
+### Discovery Mode (Recommended for New Cert Detection)
+
+**Use this mode when you suspect new certificates have been added or when platforms/topologies have changed.**
+
+Discovery mode automatically scans all known test jobs and downloads ALL rawTLSInfo artifacts found, not just the hardcoded list. This helps detect:
+- New certificates added by components
+- New platforms or topologies
+- New featuresets
+- Architecture-specific variations
+
+```bash
+DISCOVER_MODE=true make refresh-tls-registry NIGHTLY_URL=<url>
+```
+
+When new files are discovered, the script will:
+- Download them automatically
+- Mark them clearly in the output with 🆕
+- List all new files in the summary
+- Warn you to review what changed
+
+**Example output when new files are found:**
+```
+🆕 NEW FILE DISCOVERED: raw-tls-artifacts-ha-amd64-rosa-ovn-default.json
+
+🆕 Newly discovered artifacts:
+  • raw-tls-artifacts-ha-amd64-rosa-ovn-default.json
+
+⚠️  IMPORTANT: New TLS artifacts were discovered!
+   This could indicate:
+   - A new platform or topology was added
+   - A new featureset was introduced  
+   - A component added new certificates
+```
+
 ### Dry Run Mode
 
 Test the download process without creating a PR:
@@ -108,6 +150,26 @@ Re-download all artifacts even if they already exist:
 
 ```bash
 FORCE_DOWNLOAD=true make refresh-tls-registry NIGHTLY_URL=<url>
+```
+
+### Combine Options
+
+You can combine multiple options:
+
+```bash
+# Discover new files in dry-run mode
+DISCOVER_MODE=true DRY_RUN=true make refresh-tls-registry NIGHTLY_URL=<url>
+
+# Force re-download with discovery
+DISCOVER_MODE=true FORCE_DOWNLOAD=true make refresh-tls-registry NIGHTLY_URL=<url>
+```
+
+### Additional Jobs
+
+If you need to scan additional job patterns beyond the standard set:
+
+```bash
+ADDITIONAL_JOBS="job-name-1,job-name-2" DISCOVER_MODE=true make refresh-tls-registry NIGHTLY_URL=<url>
 ```
 
 ## Troubleshooting
